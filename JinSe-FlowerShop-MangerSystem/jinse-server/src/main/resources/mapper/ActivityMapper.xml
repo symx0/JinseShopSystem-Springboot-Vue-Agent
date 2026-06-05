@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jinse.mapper.ActivityMapper">
+
+    <select id="pageQuery" resultType="com.jinse.entity.Activity">
+        select * from activity
+        <where>
+            <if test="name!=null">
+                and content like CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="pageQueryForUser" resultType="com.jinse.entity.Activity">
+        select * from activity
+        <where>
+            <if test="name!=null">
+                and content like CONCAT('%', #{name}, '%')
+            </if>
+            and start_time &lt;= CURRENT_TIMESTAMP
+            and end_time &gt;= CURRENT_TIMESTAMP
+            and status = 1
+        </where>
+        order by create_time desc
+    </select>
+
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into activity(start_time,end_time,status,content,limit_per,create_time,update_time,create_user,update_user)
+        values(#{startTime},#{endTime},#{status},#{content},#{limitPer},#{createTime},#{updateTime},#{createUser},#{updateUser})
+    </insert>
+
+    <update id="update" parameterType="Activity">
+        update activity
+        <set>
+            <if test="startTime != null">
+                start_time = #{startTime},
+            </if>
+            <if test="endTime != null">
+                end_time = #{endTime},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="content != null">
+                content = #{content},
+            </if>
+            <if test="limitPer != null">
+                limit_per = #{limitPer},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+            <if test="updateUser != null">
+                update_user = #{updateUser},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="setStatusBatch">
+        update activity set status = #{status}, update_time = now()
+        where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="batchExpireActivities">
+        update activity set status = 2
+        where status = 1 and end_time &lt; CURRENT_TIMESTAMP
+    </update>
+    
+    <delete id="deleteByIds">
+        delete from activity where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

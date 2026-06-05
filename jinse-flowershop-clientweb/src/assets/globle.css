@@ -1,0 +1,90 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #3D2E28;
+  background: #F7F3F0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul, li {
+  list-style: none;
+}
+
+/* ========== Element Plus 全局覆盖 ========== */
+.el-button--primary {
+  --el-button-bg-color: #8B4A50;
+  --el-button-border-color: #8B4A50;
+  --el-button-hover-bg-color: #9D5A60;
+  --el-button-hover-border-color: #9D5A60;
+  --el-button-active-bg-color: #7A3A42;
+  --el-button-active-border-color: #7A3A42;
+}
+
+.el-tag {
+  border-radius: 4px;
+}
+
+.el-pagination.is-background .el-pager li:not(.is-disabled).is-active {
+  background-color: #8B4A50;
+}
+
+.el-input__wrapper.is-focus,
+.el-select .el-input.is-focus .el-input__wrapper,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px #8B4A50 inset;
+}
+
+.el-select-dropdown__item.is-selected {
+  color: #8B4A50;
+}
+
+.el-message {
+  border-radius: 8px;
+}
+
+.el-message-box {
+  border-radius: 10px;
+}
+
+.el-card {
+  border-radius: 10px;
+}
+
+.el-dialog {
+  border-radius: 12px;
+}
+
+.el-dialog__header {
+  border-bottom: 1px solid #EDE4DD;
+  padding: 16px 20px;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C8BAB0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A89890;
+}

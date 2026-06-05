@@ -1,0 +1,15 @@
+// 全局配置
+export default {
+  // API 基础路径
+  apiBaseURL: '/api',
+  // 请求超时时间（毫秒）
+  requestTimeout: 30000,
+  // 订单页面自动刷新间隔（毫秒）
+  orderRefreshInterval: 10000,
+  // 订单列表默认显示数量（点击"更多订单"前）
+  orderDefaultShowCount: 3,
+  // 订单卡片商品预览最大显示数量
+  orderGoodsPreviewCount: 2,
+  // 商品列表每页数量
+  flowerPageSize: 12
+}

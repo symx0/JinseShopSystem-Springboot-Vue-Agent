@@ -1,0 +1,23 @@
+sky:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    host: localhost
+    port: 3306
+    database: jinse_flowershop
+    username: root
+    password: zj20030517
+  alioss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    access-key-id: LTAI5t7KkwqQUDpCzkjzuTea
+    access-key-secret: kBhH68xiyeHQOP1I9E2GRXE4GdFhUk
+    bucket-name: jinse-flowershop
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    password: root
+  wechat:
+    appid: wxa91ba8ae90d0cf2d
+    secret: 60d0618ecd57c7557080f610e4645a1e
+  alipay:
+    biz-content-template: '{"out_trade_no":"%s","total_amount":"%s","subject":"%s","product_code":"FAST_INSTANT_TRADE_PAY"}'

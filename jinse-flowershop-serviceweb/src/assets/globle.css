@@ -1,0 +1,118 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #3D2E28;
+  background: #F7F3F0;
+}
+
+.ml-5  { margin-left: 5px; }
+.mr-5  { margin-right: 5px; }
+.pd-10 { padding: 10px 0; }
+
+/* ========== Element Plus 全局覆盖 ========== */
+
+/* 按钮 */
+.el-button--primary {
+  --el-button-bg-color: #8B4A50;
+  --el-button-border-color: #8B4A50;
+  --el-button-hover-bg-color: #9D5A60;
+  --el-button-hover-border-color: #9D5A60;
+  --el-button-active-bg-color: #7A3A42;
+  --el-button-active-border-color: #7A3A42;
+}
+
+/* 标签 */
+.el-tag {
+  border-radius: 4px;
+}
+
+/* 分页器激活色 */
+.el-pagination.is-background .el-pager li:not(.is-disabled).is-active {
+  background-color: #8B4A50;
+}
+
+/* 对话框标题 */
+.el-dialog__header {
+  border-bottom: 1px solid #EDE4DD;
+  padding: 16px 20px;
+}
+
+.el-dialog__title {
+  color: #3D2E28;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.el-dialog__body {
+  padding: 20px;
+}
+
+/* 表格 */
+.el-table {
+  --el-table-border-color: #EDE4DD;
+}
+
+.el-table th.el-table__cell {
+  background-color: #F7F3F0;
+  color: #5D4A3A;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: #FBF9F7;
+}
+
+/* 输入框聚焦 */
+.el-input__wrapper.is-focus,
+.el-select .el-input.is-focus .el-input__wrapper,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px #8B4A50 inset;
+}
+
+/* 下拉菜单激活项 */
+.el-select-dropdown__item.is-selected {
+  color: #8B4A50;
+}
+
+/* 消息提示 */
+.el-message {
+  border-radius: 8px;
+}
+
+/* 确认对话框 */
+.el-message-box {
+  border-radius: 10px;
+}
+
+/* 卡片 */
+.el-card {
+  border-radius: 10px;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C8BAB0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A89890;
+}

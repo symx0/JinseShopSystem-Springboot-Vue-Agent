@@ -1,0 +1,131 @@
+z# ==============================================================================
+# 通用忽略规则
+# ==============================================================================
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*.tmp
+*.log
+*.lock
+
+# IDE配置
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+.vs/
+
+# ==============================================================================
+# Java/Spring Boot 项目忽略
+# ==============================================================================
+
+# Maven构建产物
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# 敏感配置文件
+application-local.yml
+application-prod.yml
+application-test.yml
+*.env.local
+
+# ==============================================================================
+# Vue/Node.js 项目忽略
+# ==============================================================================
+
+# Node.js依赖
+node_modules/
+
+# 构建产物
+dist/
+build/
+*.min.js
+*.min.css
+
+# 包管理器日志
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Vue CLI配置
+vue.config.js.local
+
+# ==============================================================================
+# Python项目忽略
+# ==============================================================================
+
+# Python编译产物
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+.env.local
+*.pyc
+*.pyo
+*.pyd
+
+# pip缓存
+.pip/
+
+# ==============================================================================
+# 数据库和缓存
+# ==============================================================================
+
+# Redis/RocksDB
+dump.rdb
+*.rdb
+
+# SQLite
+*.db
+*.sqlite
+
+# 日志目录
+logs/
+
+# ==============================================================================
+# 其他
+# ==============================================================================
+
+# 备份文件
+*.backup
+*.old
+*.orig
+*.rej
+
+# 压缩包
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# 证书和密钥
+*.pem
+*.key
+*.crt
+*.p12
+
+# 临时目录
+temp/
+tmp/
+
+# 编辑器备份
+*~
+.*.swp
+
+备忘录.txt

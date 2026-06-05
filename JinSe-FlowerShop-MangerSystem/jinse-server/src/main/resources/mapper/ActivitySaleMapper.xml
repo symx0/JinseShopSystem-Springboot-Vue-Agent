@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jinse.mapper.ActivitySaleMapper">
+
+
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into activity_sale(activity_id,flower_id,original_price,discount_price,stock,sale,create_time,update_time,create_user,update_user)
+        values(#{activityId},#{flowerId},#{originalPrice},#{discountPrice},#{stock},#{sale},#{createTime},#{updateTime},#{createUser},#{updateUser})
+    </insert>
+
+    <update id="batchUpdateWithVersion">
+        <foreach collection="list" item="sale" separator=";">
+            update activity_sale
+            set stock = #{sale.stock},
+                sale = #{sale.sale},
+                version = version + 1,
+                update_time = #{sale.updateTime},
+                update_user = #{sale.updateUser}
+            where activity_id = #{sale.activityId}
+                and flower_id = #{sale.flowerId}
+                and version = #{sale.version}
+        </foreach>
+    </update>
+
+    <select id="pageQuery" resultType="com.jinse.entity.ActivitySale">
+        select * from activity_sale
+        <where>
+            <if test="activityId!=null">
+                and activity_id=#{activityId}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <update id="update">
+        update activity_sale
+        <set>
+            <if test="originalPrice!=null">
+                original_price=#{originalPrice},
+            </if>
+            <if test="discountPrice!=null">
+                discount_price=#{discountPrice},
+            </if>
+            <if test="stock!=null">
+                stock=#{stock},
+            </if>
+            <if test="sale!=null">
+                sale=#{sale},
+            </if>
+            <if test="updateTime!=null">
+                update_time=#{updateTime},
+            </if>
+            <if test="updateUser!=null">
+                update_user=#{updateUser},
+            </if>
+        </set>
+        <choose>
+            <when test="id!=null">
+                where id=#{id}
+            </when>
+            <otherwise>
+                where activity_id=#{activityId} and flower_id=#{flowerId}
+            </otherwise>
+        </choose>
+    </update>
+
+    <delete id="deleteByActivityIds">
+        delete from activity_sale where activity_id in
+        <foreach collection="activityIds" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

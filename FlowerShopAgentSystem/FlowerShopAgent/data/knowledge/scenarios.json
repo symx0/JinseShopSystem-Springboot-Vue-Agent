@@ -1,0 +1,92 @@
+[
+  {
+    "id": "confession",
+    "name": "表白/恋爱",
+    "description": "向心仪的人表达爱意，浪漫告白场景",
+    "keywords": ["表白", "告白", "喜欢", "恋爱", "爱情", "女朋友", "男朋友", "对象", "心上人"],
+    "recommended_categories": ["花束"],
+    "tips": "表白推荐选择玫瑰花束或满天星，红色代表热烈，粉色代表温柔，白色代表纯洁。搭配一张手写卡片效果更佳。",
+    "budget_suggestion": "建议预算100-300元，花束更显诚意"
+  },
+  {
+    "id": "valentine",
+    "name": "情人节/纪念日",
+    "description": "情人节、恋爱纪念日等浪漫节日",
+    "keywords": ["情人节", "纪念日", "520", "七夕", "恋爱纪念", "周年", "结婚纪念"],
+    "recommended_categories": ["花束"],
+    "tips": "情人节首选玫瑰花束，不同朵数有不同含义：11朵代表一心一意，19朵代表期待陪伴，99朵代表天长地久。",
+    "budget_suggestion": "建议预算200-500元，节日花束选择更多"
+  },
+  {
+    "id": "mother_day",
+    "name": "母亲节/感恩长辈",
+    "description": "向母亲或长辈表达感恩之情",
+    "keywords": ["母亲节", "妈妈", "母亲", "长辈", "感恩", "探望", "看望", "奶奶", "外婆"],
+    "recommended_categories": ["花束", "盆栽"],
+    "tips": "康乃馨是母亲节的经典之选，红色代表健康长寿，粉色代表年轻美丽。也可以选择盆栽，更持久。",
+    "budget_suggestion": "建议预算80-200元，温馨为主"
+  },
+  {
+    "id": "graduation",
+    "name": "毕业/离别",
+    "description": "毕业典礼、同学离别等场景",
+    "keywords": ["毕业", "离校", "同学", "离别", "送别", "青春", "校园"],
+    "recommended_categories": ["花束"],
+    "tips": "毕业花束推荐选择向日葵搭配满天星，寓意前程似锦。也可以选择定制毕业花束。",
+    "budget_suggestion": "建议预算100-300元，可多人合买大束"
+  },
+  {
+    "id": "housewarming",
+    "name": "乔迁/新居",
+    "description": "朋友搬家、新居入伙等场景",
+    "keywords": ["乔迁", "搬家", "新居", "新房", "入伙"],
+    "recommended_categories": ["盆栽", "园林造景"],
+    "tips": "乔迁推荐送盆栽，既美观又长久。红掌寓意红红火火，蝴蝶兰寓意吉祥如意。也可以送庭院植物。",
+    "budget_suggestion": "建议预算50-200元，盆栽更实用"
+  },
+  {
+    "id": "business",
+    "name": "商务/开业",
+    "description": "开业庆典、商务拜访等场景",
+    "keywords": ["开业", "商务", "庆典", "拜访", "客户", "领导", "合作"],
+    "recommended_categories": ["盆栽", "花束"],
+    "tips": "商务场景推荐红掌（红红火火）或蝴蝶兰（高贵典雅），开业花篮更显大气。",
+    "budget_suggestion": "建议预算100-300元，大气体面为主"
+  },
+  {
+    "id": "home_decor",
+    "name": "家居装饰",
+    "description": "自家装饰、美化环境",
+    "keywords": ["装饰", "家里", "家居", "摆放", "美化", "自己", "办公", "桌面"],
+    "recommended_categories": ["盆栽", "多肉"],
+    "tips": "家居装饰推荐多肉（桌面小清新）、玫瑰海棠（四季常开）、水仙花（清新淡雅）。办公桌首选多肉。",
+    "budget_suggestion": "建议预算15-50元，小盆栽即可"
+  },
+  {
+    "id": "garden",
+    "name": "庭院/阳台造景",
+    "description": "庭院美化、阳台花园打造",
+    "keywords": ["庭院", "阳台", "花园", "造景", "种植", "花墙", "院子"],
+    "recommended_categories": ["园林造景"],
+    "tips": "庭院造景推荐月季（月月开花）和蔷薇（打造花墙），阳台种植可以选择小苗。",
+    "budget_suggestion": "建议预算50-200元，根据面积选择"
+  },
+  {
+    "id": "spring_festival",
+    "name": "春节/新年",
+    "description": "春节、新年等传统节日",
+    "keywords": ["春节", "新年", "过年", "年宵", "除夕", "大年"],
+    "recommended_categories": ["盆栽", "花束"],
+    "tips": "春节推荐水仙花（清新吉祥）、红掌（红红火火），年宵花增添节日气氛。",
+    "budget_suggestion": "建议预算30-150元，喜庆为主"
+  },
+  {
+    "id": "visit_patient",
+    "name": "探望/慰问",
+    "description": "探望病人、慰问朋友",
+    "keywords": ["探病", "看望", "慰问", "病人", "住院", "康复"],
+    "recommended_categories": ["花束", "盆栽"],
+    "tips": "探望病人推荐康乃馨（温馨关怀）或盆栽（长久陪伴），避免花粉过多的花卉。",
+    "budget_suggestion": "建议预算50-150元，温馨关怀为主"
+  }
+]

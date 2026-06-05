@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jinse.mapper.CommentMapper">
+
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into comment(user_id,flower_id,rating,content,create_time,like_count,reply_count)
+        values(#{userId},#{flowerId},#{rating},#{content},#{createTime},#{likeCount},#{replyCount})
+    </insert>
+
+    <select id="pageQuery" resultType="com.jinse.entity.Comment">
+        select c.* from comment c
+        left join user u on c.user_id = u.id
+        left join flower f on c.flower_id = f.id
+        <where>
+            <if test="flowerId!=null">
+                and c.flower_id=#{flowerId}
+            </if>
+            <if test="content!=null and content!=''">
+                and c.content like concat('%',#{content},'%')
+            </if>
+            <if test="userName!=null and userName!=''">
+                and (u.name like concat('%',#{userName},'%') or u.username like concat('%',#{userName},'%'))
+            </if>
+            <if test="flowerName!=null and flowerName!=''">
+                and f.name like concat('%',#{flowerName},'%')
+            </if>
+        </where>
+        order by c.create_time desc
+    </select>
+
+
+    <select id="list" resultType="com.jinse.entity.Comment">
+        select id, user_id, flower_id, rating, content, create_time, like_count, reply_count
+        from comment
+        <where>
+            <if test="userId!=null">
+                and user_id=#{userId}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <delete id="deleteByIds">
+        delete from comment where id in
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+</mapper>
