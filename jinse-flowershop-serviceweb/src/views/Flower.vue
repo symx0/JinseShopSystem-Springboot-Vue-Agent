@@ -13,6 +13,7 @@
         </el-select>
         <el-select v-model="search.activityId" placeholder="活动" clearable style="width: 160px" @change="loadData">
           <el-option v-for="a in activities" :key="a.id" :label="a.content" :value="a.id" />
+          <el-option label="非活动商品" :value="-1" />
         </el-select>
         <el-button type="primary" @click="loadData">查询</el-button>
         <el-button @click="resetSearch">重置</el-button>
@@ -54,8 +55,10 @@
         <el-pagination
           v-model:current-page="page"
           v-model:page-size="pageSize"
+          :page-sizes="[5, 10, 20, 50]"
           :total="total"
-          layout="total, prev, pager, next"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
           @current-change="loadData"
         />
       </div>
@@ -121,7 +124,13 @@ const formRules = {
 }
 
 const loadData = async () => {
-  const res = await flowerApi.page({ page: page.value, pageSize: pageSize.value, name: search.name || undefined, categoryId: search.categoryId || undefined, activityId: search.activityId || undefined })
+  const params = { page: page.value, pageSize: pageSize.value, name: search.name || undefined, categoryId: search.categoryId || undefined }
+  if (search.activityId === -1) {
+    params.noActivity = true
+  } else {
+    params.activityId = search.activityId || undefined
+  }
+  const res = await flowerApi.page(params)
   if (res.code === 1) {
     tableData.value = res.data.records || []
     total.value = res.data.total || 0
@@ -139,6 +148,7 @@ const loadActivities = async () => {
 }
 
 const resetSearch = () => { search.name = ''; search.categoryId = null; search.activityId = null; loadData() }
+const handleSizeChange = () => { page.value = 1; loadData() }
 const uploadHeaders = { token: JSON.parse(localStorage.getItem('manager') || '{}').token || '' }
 
 const openDialog = (row) => {

@@ -9,6 +9,9 @@
         <router-link to="/home" class="nav-link">首页</router-link>
         <router-link to="/flowers" class="nav-link">鲜花商城</router-link>
         <router-link to="/activity" class="nav-link">热门活动</router-link>
+        <router-link to="/ai-assistant" class="nav-link nav-ai">
+          <span class="nav-ai-icon">🤖</span>AI导购
+        </router-link>
         <div class="nav-cart" @click="$router.push('/cart')">
           <el-badge :value="cartCount" :hidden="cartCount === 0" :max="99">
             <el-icon :size="22"><ShoppingCart /></el-icon>
@@ -228,4 +231,18 @@ const refreshUserInfo = async () => {
   background: #E8B96B;
   color: #2D2320;
 }
+
+.nav-ai {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(232,185,107,0.12);
+  padding: 6px 14px !important;
+  border-radius: 20px;
+  border: 1px solid rgba(232,185,107,0.25);
+}
+.nav-ai:hover {
+  background: rgba(232,185,107,0.22) !important;
+  border-color: #E8B96B;
+  border-bottom-color: #E8B96B !important;
+}
+.nav-ai-icon { font-size: 16px; }
 </style>

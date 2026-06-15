@@ -47,8 +47,10 @@
         <el-pagination
           v-model:current-page="page"
           v-model:page-size="pageSize"
+          :page-sizes="[5, 10, 20, 50]"
           :total="total"
-          layout="total, prev, pager, next"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
           @current-change="loadData"
         />
       </div>
@@ -110,6 +112,7 @@ const loadData = async () => {
 }
 
 const resetSearch = () => { search.name = ''; loadData() }
+const handleSizeChange = () => { page.value = 1; loadData() }
 
 const openDialog = (row) => {
   editId.value = row?.id || null

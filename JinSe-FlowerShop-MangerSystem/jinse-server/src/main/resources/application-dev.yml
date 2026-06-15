@@ -5,7 +5,7 @@ sky:
     port: 3306
     database: jinse_flowershop
     username: root
-    password: zj20030517
+    password: root
   alioss:
     endpoint: oss-cn-beijing.aliyuncs.com
     access-key-id: LTAI5t7KkwqQUDpCzkjzuTea

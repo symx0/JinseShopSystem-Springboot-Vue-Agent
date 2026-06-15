@@ -18,6 +18,19 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/agent': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/agent/, ''),
+        // SSE 需要禁用代理缓冲
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req.url.includes('/chat/stream')) {
+              proxyReq.setHeader('Accept', 'text/event-stream')
+            }
+          })
+        }
       }
     }
   }

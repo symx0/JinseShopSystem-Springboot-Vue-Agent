@@ -43,5 +43,7 @@ public class FlowerVO implements Serializable {
     private Integer sale;
     private Integer limitPer;
     private String activityContent;
+    // 当前用户已购买该促销商品的数量
+    private Integer purchasedCount;
 
 }

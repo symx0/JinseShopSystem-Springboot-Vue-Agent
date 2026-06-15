@@ -1,0 +1,18 @@
+embedding:
+  api_key: ollama
+  base_url: http://10.101.64.156:11434
+  model: qwen3-embedding:8b
+mysql:
+  charset: utf8mb4
+  database: jinse_flowershop
+  host: localhost
+  password: root
+  pool_size: 5
+  port: 3306
+  user: root
+server:
+  name: FlowerShop MCP Server
+  sse_host: 0.0.0.0
+  sse_port: 8001
+  transport: stdio
+  version: 1.0.0

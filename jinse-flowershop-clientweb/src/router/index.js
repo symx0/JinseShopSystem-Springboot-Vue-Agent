@@ -13,7 +13,8 @@ const routes = [
       { path: 'order', name: 'Order', component: () => import('../views/Order.vue') },
       { path: 'checkout', name: 'Checkout', component: () => import('../views/Checkout.vue') },
       { path: 'activity', name: 'Activity', component: () => import('../views/Activity.vue') },
-      { path: 'usercenter', name: 'UserCenter', component: () => import('../views/UserCenter.vue') }
+      { path: 'usercenter', name: 'UserCenter', component: () => import('../views/UserCenter.vue') },
+      { path: 'ai-assistant', name: 'AiAssistant', component: () => import('../views/AiChatPage.vue') }
     ]
   },
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') }
@@ -37,7 +38,7 @@ router.beforeEach((to, from, next) => {
     } catch (e) {}
   }
 
-  const publicPages = ['Login', 'Home', 'FlowerList', 'FlowerDetail', 'Activity']
+  const publicPages = ['Login', 'Home', 'FlowerList', 'FlowerDetail', 'Activity', 'AiAssistant']
   if (!user && !publicPages.includes(to.name)) {
     next('/login')
     return

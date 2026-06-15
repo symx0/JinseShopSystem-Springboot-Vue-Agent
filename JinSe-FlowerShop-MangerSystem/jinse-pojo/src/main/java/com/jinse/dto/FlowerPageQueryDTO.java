@@ -20,4 +20,7 @@ public class FlowerPageQueryDTO implements Serializable {
 
     private Long activityId;
 
+    // true=只查非活动商品，false或null=按activityId过滤
+    private Boolean noActivity;
+
 }

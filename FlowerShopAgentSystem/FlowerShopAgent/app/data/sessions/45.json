@@ -1,0 +1,48 @@
+{
+  "session_id": "45",
+  "user_id": "7",
+  "messages": [
+    {
+      "type": "human",
+      "content": "母亲节快到了，想给妈妈买花"
+    },
+    {
+      "type": "ai",
+      "content": "我来帮您挑选合适的鲜花！请告诉我更多偏好，比如预算范围、喜欢的花色或送礼场景，这样我能推荐更精准~"
+    },
+    {
+      "type": "human",
+      "content": "100左右"
+    },
+    {
+      "type": "ai",
+      "content": "我来帮您挑选合适的鲜花！请告诉我更多偏好，比如预算范围、喜欢的花色或送礼场景，这样我能推荐更精准~"
+    }
+  ],
+  "identified_scenario": "mother_day",
+  "scenario_name": "母亲节",
+  "scenario_id": "mother_day",
+  "scenario_confidence": 0.9,
+  "extracted_keywords": [
+    "买花",
+    "预算",
+    "母亲节",
+    "100左右",
+    "送花",
+    "妈妈"
+  ],
+  "budget_min": 70.0,
+  "budget_max": 130.0,
+  "preferred_category": "花束",
+  "recipient": "母亲",
+  "special_requirements": null,
+  "current_step": "end",
+  "user_type": "shopping",
+  "rag_documents": [],
+  "_hallucination_flags": [],
+  "_order_valid": false,
+  "_recommend_failed_rounds": 0,
+  "_clarify_round": 0,
+  "thinking_chain": "**用户核心需求**：为母亲购买母亲节礼物鲜花\n\n**已确认信息**：\n- 场景：母亲节送礼\n- 对象：妈妈\n- 预算：100元左右\n- 偏好：未具体说明\n\n**意图变化**：从简单询问转向寻求个性化推荐\n\n**未解决的问题**：用户尚未提供具体花色偏好、送礼场景等关键信息，助手需进一步了解才能精准推荐。",
+  "last_active": 1781348777.1675913
+}

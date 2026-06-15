@@ -2,10 +2,12 @@ package com.jinse.controller.user;
 
 import com.jinse.constant.RedisConstants;
 import com.jinse.constant.StatusConstant;
+import com.jinse.context.BaseContext;
 import com.jinse.dto.FlowerPageQueryDTO;
 import com.jinse.entity.ActivitySale;
 import com.jinse.entity.Flower;
 import com.jinse.mapper.ActivitySaleMapper;
+import com.jinse.mapper.OrderDetailMapper;
 import com.jinse.result.PageResult;
 import com.jinse.result.Result;
 import com.jinse.service.ActivityService;
@@ -42,6 +44,8 @@ public class FlowerController {
     private ActivitySaleMapper activitySaleMapper;
     @Autowired
     private ActivityService activityService;
+    @Autowired
+    private OrderDetailMapper orderDetailMapper;
 
     /**
      * 根据分类id查询鲜花
@@ -86,6 +90,12 @@ public class FlowerController {
             flowerVO.setSale(sale.getSale());
             flowerVO.setLimitPer(sale.getLimitPer());
             flowerVO.setActivityContent(sale.getActivityContent());
+            // 查询当前用户已购数量
+            Long userId = BaseContext.getCurrentId();
+            if (userId != null) {
+                Integer purchased = orderDetailMapper.sumPurchasedQuantity(userId, id);
+                flowerVO.setPurchasedCount(purchased != null ? purchased : 0);
+            }
         } else {
             flowerVO.setPromo(false);
         }

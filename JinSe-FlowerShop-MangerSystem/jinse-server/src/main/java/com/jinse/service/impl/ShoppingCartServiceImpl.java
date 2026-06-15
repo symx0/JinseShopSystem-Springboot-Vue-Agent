@@ -91,6 +91,9 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         //如果不存在，则添加到购物车，数量默认为1（insert）
         if(flowerId!=null){
             Flower flower=flowerMapper.getById(flowerId); //根据菜品id查询菜品对象，拿到该菜品的全部数据
+            if(flower == null) {
+                throw new BaseException("鲜花商品不存在，ID: " + flowerId);
+            }
             shoppingCart.setName(flower.getName());
             shoppingCart.setImage(flower.getImage());
             shoppingCart.setAmount(flower.getPrice());

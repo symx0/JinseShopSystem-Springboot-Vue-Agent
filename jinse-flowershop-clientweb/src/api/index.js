@@ -67,3 +67,39 @@ export const shopApi = {
   getPaymentMode: () => request.get('/user/shop/paymentMode'),
   getFee: () => request.get('/user/shop/fee')
 }
+
+// Agent智能导购API（直连FastAPI Agent服务）
+import axios from 'axios'
+import config from '@/config'
+
+const agentRequest = axios.create({
+  baseURL: config.agentBaseURL,
+  timeout: 60000
+})
+
+export const agentApi = {
+  chat: (sessionId, message, userId = null) => agentRequest.post('/chat', { session_id: sessionId, message, user_id: userId }),
+  // 流式聊天：返回 EventSource 可用的 URL
+  chatStreamUrl: (sessionId, message, userId) => {
+    const base = agentRequest.defaults.baseURL || '/agent'
+    const params = new URLSearchParams()
+    // 对于 SSE，需要将参数通过 POST body 传递，但 EventSource 只支持 GET。
+    // 改用 fetch + ReadableStream
+    return `${base}/chat/stream`
+  },
+  getOrder: (sessionId) => agentRequest.get(`/order/${sessionId}`),
+  updateOrder: (sessionId, data) => agentRequest.post(`/order/${sessionId}/update`, data),
+  confirmOrder: (sessionId, data) => agentRequest.post(`/order/${sessionId}/confirm`, data),
+  resetSession: (sessionId) => agentRequest.post(`/session/${sessionId}/reset`),
+  getHistory: (sessionId, userId) => agentRequest.get(`/session/${sessionId}/history`, { params: { user_id: userId } }),
+  health: () => agentRequest.get('/health')
+}
+
+// Agent会话管理API（通过Spring Boot后端，会话标识=DB自增主键）
+export const agentSessionApi = {
+  list: () => request.get('/user/agent/sessions'),
+  create: (title) => request.post('/user/agent/session', { title }),
+  rename: (sessionId, title) => request.put(`/user/agent/session/${sessionId}/title`, { title }),
+  touch: (sessionId) => request.post(`/user/agent/session/${sessionId}/touch`),
+  delete: (sessionId) => request.delete(`/user/agent/session/${sessionId}`)
+}

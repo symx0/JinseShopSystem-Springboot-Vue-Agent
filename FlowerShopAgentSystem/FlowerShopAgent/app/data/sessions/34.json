@@ -1,0 +1,85 @@
+{
+  "session_id": "34",
+  "user_id": "9",
+  "messages": [
+    {
+      "type": "human",
+      "content": "母亲节快到了，想给妈妈买花"
+    },
+    {
+      "type": "ai",
+      "content": "您好呀！我是锦色花店的导购助手小锦～想为您推荐最合适的花礼呢！\n\n请问您是想为哪个特别的场合准备鲜花呢？比如生日、母亲节、表白、还是想给自己添置一束漂亮的花来装饰家居呀？"
+    },
+    {
+      "type": "human",
+      "content": "生日"
+    },
+    {
+      "type": "ai",
+      "content": "您好呀！我是锦色花店的导购助手小锦～想为您推荐最合适的花礼呢！\n\n请问您是想为哪个特别的场合准备鲜花呢？比如生日、母亲节、表白、还是想给自己添置个漂亮的装饰呀？"
+    },
+    {
+      "type": "human",
+      "content": "生日"
+    },
+    {
+      "type": "ai",
+      "content": "您好！了解到是生日送花，想请问您是准备送给妈妈、恋人、朋友还是其他重要的人呢？这样我能为您推荐更合适的花艺方案～"
+    },
+    {
+      "type": "human",
+      "content": "母亲"
+    },
+    {
+      "type": "ai",
+      "content": "妈妈生日送花，您大概准备花多少钱呢？这样我可以帮您推荐更合适的花材和款式。"
+    },
+    {
+      "type": "human",
+      "content": "100左右"
+    },
+    {
+      "type": "ai",
+      "content": "妈妈生日送花，您比较倾向于温馨浪漫的花束造型，还是更喜欢清新自然的盆栽风格呢？"
+    },
+    {
+      "type": "human",
+      "content": "花束"
+    },
+    {
+      "type": "ai",
+      "content": "妈妈生日送花，您比较倾向于温馨浪漫的花束造型，还是更喜欢清新自然的盆栽风格呢？"
+    }
+  ],
+  "identified_scenario": "birthday",
+  "scenario_name": "生日",
+  "scenario_id": "birthday",
+  "scenario_confidence": 0.9,
+  "extracted_keywords": [
+    "妈妈",
+    "100",
+    "鲜花",
+    "买花",
+    "母亲节",
+    "花束",
+    "预算",
+    "送花",
+    "左右",
+    "母亲",
+    "生日"
+  ],
+  "budget_min": 70.0,
+  "budget_max": 130.0,
+  "preferred_category": "花束",
+  "recipient": "母亲",
+  "special_requirements": null,
+  "current_step": "end",
+  "user_type": "shopping",
+  "rag_documents": [],
+  "_hallucination_flags": [],
+  "_order_valid": true,
+  "_recommend_failed_rounds": 0,
+  "_clarify_round": 0,
+  "thinking_chain": "**用户核心需求**：为妈妈生日购买鲜花\n\n**已确认信息**：\n- 场景：妈妈生日\n- 对象：妈妈\n- 预算：100元左右\n- 偏好：花束造型，倾向温馨浪漫风格\n\n**意图变化**：从母亲节需求明确为生日送花\n\n**未解决的问题**：具体花材偏好、花束款式细节等需求尚未明确",
+  "last_active": 1781442167.532483
+}

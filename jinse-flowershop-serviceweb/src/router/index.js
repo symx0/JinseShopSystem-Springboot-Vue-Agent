@@ -23,7 +23,8 @@ const routes = [
       { path: 'report',   name: 'Report',   component: () => import('../views/Report.vue') },
       { path: 'activity', name: 'Activity', component: () => import('../views/Activity.vue') },
       { path: 'shop',     name: 'Shop',     component: () => import('../views/Shop.vue') },
-      { path: 'alipay',   name: 'Alipay',   component: () => import('../views/AlipayConfig.vue') }
+      { path: 'alipay',   name: 'Alipay',   component: () => import('../views/AlipayConfig.vue') },
+      { path: 'ai-config', name: 'AIConfig', component: () => import('../views/AIConfig.vue') }
     ]
   },
   {

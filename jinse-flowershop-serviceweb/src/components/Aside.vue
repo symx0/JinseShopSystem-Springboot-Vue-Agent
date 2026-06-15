@@ -64,6 +64,10 @@
         <el-icon><Wallet /></el-icon>
         <span>支付配置</span>
       </el-menu-item>
+      <el-menu-item index="/ai-config" class="menu-item">
+        <el-icon><Cpu /></el-icon>
+        <span>AI 模型配置</span>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -71,7 +75,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { House, User, UserFilled, ShoppingBag, Grid, Sunny, Document, ChatDotSquare, TrendCharts, Present, Shop, Wallet } from '@element-plus/icons-vue'
+import { House, User, UserFilled, ShoppingBag, Grid, Sunny, Document, ChatDotSquare, TrendCharts, Present, Shop, Wallet, Cpu } from '@element-plus/icons-vue'
 
 const props = defineProps({
   isCollapse: Boolean

@@ -5,7 +5,7 @@
     </div>
 
     <div class="order-list" v-if="orders.length">
-      <div v-for="order in displayedOrders" :key="order.orderId" class="order-card" :class="'status-border-' + order.status">
+      <div v-for="order in displayedOrders" :key="order.id" class="order-card" :class="'status-border-' + order.status">
         <div class="order-header">
           <div>
             <span class="order-number">订单号: {{ order.number }}</span>
@@ -19,7 +19,7 @@
               <p v-if="order.status === 8" style="color:#E6A23C;font-weight:600;">退货申请已提交，等待商家审核...</p>
               <p v-if="order.rejectionReason" style="color:#F56C6C;">退货申请被拒绝：{{ order.rejectionReason }}</p>
               <p v-if="order.status === 7 && order.cancelReason" style="color:#909399;">取消原因：{{ order.cancelReason }}</p>
-              <p><span class="label">收货人：</span>{{ order.username || '-' }} <span style="margin-left:12px">{{ order.phone || '' }}</span></p>
+              <p><span class="label">收货人：</span>{{ order.consignee || '-' }} <span style="margin-left:12px">{{ order.phone || '' }}</span></p>
               <p><span class="label">地址：</span>{{ order.address || '-' }}</p>
               <p v-if="order.estimatedDeliveryTime && order.status !== 1" class="delivery-estimate">
                 <span class="label">付款后预计在</span><span class="highlight-time">{{ formatTime(order.estimatedDeliveryTime) }}</span><span class="label">内发货</span>
@@ -32,17 +32,17 @@
             <div class="order-goods" v-if="order.items && order.items.length">
               <div class="goods-preview" v-for="item in order.items.slice(0, 3)" :key="item.id">
                 <el-image v-if="item.image" :src="item.image" fit="cover" class="goods-img" />
-                <span class="goods-name">{{ item.name }}</span>
+                <span class="goods-name">{{ item.flowerName }}</span>
               </div>
               <span v-if="order.items.length > 3" class="goods-more">+{{ order.items.length - 3 }}</span>
             </div>
           </div>
           <div class="order-actions">
-            <el-button size="small" @click="showDetail(order.orderId)">查看详情</el-button>
-            <el-button v-if="order.status === 1" type="danger" size="small" @click="handlePayment(order.orderId)">去付款</el-button>
-            <el-button v-if="order.status === 1" size="small" @click="handleCancel(order.orderId)">取消订单</el-button>
-            <el-button v-if="order.status === 4" type="primary" size="small" @click="handleReceipt(order.orderId)">确认收货</el-button>
-            <el-button v-if="order.status >= 2 && order.status <= 6" type="warning" size="small" @click="handleRefund(order.orderId)">申请退货</el-button>
+            <el-button size="small" @click="showDetail(order.id)">查看详情</el-button>
+            <el-button v-if="order.status === 1" type="danger" size="small" @click="handlePayment(order.id)">去付款</el-button>
+            <el-button v-if="order.status === 1" size="small" @click="handleCancel(order.id)">取消订单</el-button>
+            <el-button v-if="order.status === 4" type="primary" size="small" @click="handleReceipt(order.id)">确认收货</el-button>
+            <el-button v-if="order.status >= 2 && order.status <= 6" type="warning" size="small" @click="handleRefund(order.id)">申请退货</el-button>
           </div>
         </div>
       </div>
@@ -60,11 +60,11 @@
     <!-- 订单详情弹窗 -->
     <el-dialog title="订单详情" v-model="detailVisible" width="580px">
       <el-descriptions :column="2" border size="small">
-        <el-descriptions-item label="订单号">{{ detailData.orderId }}</el-descriptions-item>
+        <el-descriptions-item label="订单号">{{ detailData.number || detailData.id }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="statusType(detailData.status)" size="small">{{ detailData.statusText }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="收货人">{{ detailData.username || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="收货人">{{ detailData.consignee || '-' }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ detailData.phone || '-' }}</el-descriptions-item>
         <el-descriptions-item label="地址" :span="2">{{ detailData.address || '-' }}</el-descriptions-item>
         <el-descriptions-item label="金额">¥{{ detailData.amount || 0 }}</el-descriptions-item>
@@ -79,7 +79,7 @@
             <el-image v-if="row.image" :src="row.image" style="width:40px;height:40px" fit="cover" />
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="商品名称" />
+        <el-table-column prop="flowerName" label="商品名称" />
         <el-table-column prop="number" label="数量" width="60" />
         <el-table-column prop="amount" label="金额" width="80" />
       </el-table>
@@ -90,7 +90,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { orderApi } from '@/api'
+import { orderApi, shopApi } from '@/api'
 
 const orders = ref([])
 const showAll = ref(false)
@@ -127,7 +127,7 @@ const loadOrders = async () => {
       // 异步加载每个订单的商品预览
       list.forEach(async (o) => {
         try {
-          const detail = await orderApi.detail(o.orderId)
+          const detail = await orderApi.detail(o.id)
           if (detail.code === 1 && Array.isArray(detail.data)) {
             o.items = detail.data
           }
@@ -138,7 +138,7 @@ const loadOrders = async () => {
 }
 
 const showDetail = async (orderId) => {
-  const order = orders.value.find(o => o.orderId === orderId)
+  const order = orders.value.find(o => o.id === orderId)
   if (!order) return
   detailData.value = { ...order, statusText: statusText(order.status) }
   try {
@@ -152,9 +152,21 @@ const showDetail = async (orderId) => {
 
 const handlePayment = async (orderId) => {
   try {
-    await ElMessageBox.confirm('确认支付该订单？', '支付宝支付', { confirmButtonText: '确认支付', type: 'warning' })
-    // 直接导航到后端支付页面
-    window.location.href = '/api/user/order/payment/page/' + orderId
+    const modeRes = await shopApi.getPaymentMode()
+    const paymentMode = modeRes.code === 1 ? (modeRes.data ?? 1) : 1
+    if (paymentMode === 0) {
+      await ElMessageBox.confirm('确认支付该订单？', '模拟支付', { confirmButtonText: '确认支付', type: 'warning' })
+      const res = await orderApi.mockPayment(orderId)
+      if (res.code === 1) {
+        ElMessage.success('支付成功')
+        loadOrders()
+      } else {
+        ElMessage.error(res.msg || '支付失败')
+      }
+    } else {
+      await ElMessageBox.confirm('确认支付该订单？', '支付宝支付', { confirmButtonText: '确认支付', type: 'warning' })
+      window.location.href = '/api/user/order/payment/page/' + orderId
+    }
   } catch (e) {
     // 用户取消
   }

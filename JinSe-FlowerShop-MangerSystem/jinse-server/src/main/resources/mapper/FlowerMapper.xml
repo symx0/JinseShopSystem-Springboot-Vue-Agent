@@ -22,7 +22,10 @@
             <if test="status!=null">
                 and f.status=#{status}
             </if>
-            <if test="activityId!=null">
+            <if test="noActivity!=null and noActivity==true">
+                and f.id not in (select flower_id from activity_sale)
+            </if>
+            <if test="(noActivity==null or noActivity==false) and activityId!=null">
                 and f.id in (select flower_id from activity_sale where activity_id=#{activityId})
             </if>
         </where>
