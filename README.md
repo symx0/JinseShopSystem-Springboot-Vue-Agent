@@ -2,6 +2,7 @@
 
 全栈鲜花电商平台，集成 AI 智能导购 Agent，支持从选购推荐到下单支付的全流程自动化。
 
+如果该工作对您的学习有帮助的话点点STAR吧~
 ***
 
 <img width="1275" height="676" alt="Snipaste_2026-06-15_20-57-51" src="https://github.com/user-attachments/assets/3614db15-7a2d-4273-ad51-f9f5f7b63817" />
