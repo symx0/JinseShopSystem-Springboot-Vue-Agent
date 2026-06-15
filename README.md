@@ -312,7 +312,7 @@ FlowerShopAgentSystem/FlowerShopAgent/app/
 ```
 
 
-```
+
+---
 感谢以下开源工作：
 https://github.com/cuiyuestar/Blossom-FlowerShop
-```
