@@ -311,3 +311,8 @@ FlowerShopAgentSystem/FlowerShopAgent/app/
     └── schemas.py          # Pydantic 数据模型
 ```
 
+
+```
+感谢以下开源工作：
+https://github.com/cuiyuestar/Blossom-FlowerShop
+```
