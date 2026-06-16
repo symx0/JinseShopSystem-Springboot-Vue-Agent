@@ -640,7 +640,7 @@ async def node_query_and_recommend(state: AgentState) -> dict:
             if not any(p["id"] == pid for p in all_products):
                 logger.warning(f"[query_and_recommend] 推荐了不存在的商品ID: {pid}，已跳过")
                 continue
-            qty = max(1, min(rec.get("quantity", 1), 99))
+            qty = max(1, min(rec.get("quantity", 1), 999))
             items.append(OrderItem(flower_id=pid, quantity=qty))
 
         order = RecommendedOrder(
@@ -693,100 +693,62 @@ def _parse_json(text: str) -> dict:
 
 async def node_check_hallucination(state: AgentState) -> dict:
     """
-    幻觉检查 + ID 清洗节点（所有路径必经）
+    LLM 统一处理：幻觉检测 + 敏感信息清理 + 商品校验（所有路径必经）
 
-    职责：
-    1. 购物路径：验证推荐商品的 flower_id 是否在数据库中存在、是否可购买
-    2. 所有路径：清除 LLM 回复中的 ID 信息（活动ID、商品ID 等）和不当引导语
+    一次 LLM 调用完成全部质检工作：
+    - 购物路径：校验商品是否真实存在/可购买、检测文本幻觉、清理敏感信息
+    - 闲聊/知识路径：检测文本幻觉、清理敏感信息
     """
     order = state.get("order")
     raw_products = state.get("_raw_products")
     user_type = state.get("user_type", "shopping")
     messages = list(state.get("messages", []))
 
-    # ── 1. 购物路径：商品幻觉检查 ──
-    if user_type == "shopping" and order and order.items:
-        if not order or not order.items:
-            failed_rounds = state.get("_recommend_failed_rounds", 0) + 1
-            return {
-                "_order_valid": False,
-                "_hallucination_flags": [],
-                "_recommend_failed_rounds": failed_rounds,
-                "current_step": "verify",
-                "messages": messages,
-            }
+    # 找到最后一条 AIMessage
+    target_idx = None
+    for i in range(len(messages) - 1, -1, -1):
+        m = messages[i]
+        if hasattr(m, "type") and m.type == "ai" and m.content and m.content.strip():
+            target_idx = i
+            break
 
-        try:
-            all_products = json.loads(raw_products) if isinstance(raw_products, str) else (raw_products or [])
-        except (json.JSONDecodeError, TypeError):
-            all_products = []
+    if target_idx is None:
+        return {"_order_valid": True, "_hallucination_flags": [], "current_step": "verify", "messages": messages}
 
-        if not all_products:
-            return {"_order_valid": True, "_hallucination_flags": [], "current_step": "verify", "messages": messages}
+    original_text = messages[target_idx].content
 
-        product_map = {}
-        for p in all_products:
-            pid = p.get("id")
-            if pid is not None:
-                product_map[int(pid)] = p
+    # 构建 LLM 输入：AI 回复 + 商品数据（购物路径）+ 订单项（购物路径）
+    llm_input = _build_hallucination_check_input(original_text, raw_products, order, user_type)
 
-        flags = []
-        valid_items = []
+    # 调用 LLM 统一质检，返回 JSON
+    try:
+        llm_result = await _call_hallucination_llm(llm_input)
+    except Exception as e:
+        logger.warning(f"[hallucination] LLM 调用失败: {e}，跳过质检")
+        return {"_order_valid": True, "_hallucination_flags": [], "current_step": "verify", "messages": messages}
 
-        for item in order.items:
-            flag = {"flower_id": item.flower_id, "exists": True, "purchasable": True, "issues": []}
-            db_product = product_map.get(item.flower_id)
+    # 解析 LLM 返回
+    cleaned_text = llm_result.get("cleaned_text", original_text)
+    hallucinations = llm_result.get("hallucinations", [])
+    order_validation = llm_result.get("order_validation")
 
-            if not db_product:
-                flag["exists"] = False
-                flag["purchasable"] = False
-                flag["issues"].append("商品不在数据库中")
-                flags.append(flag)
-                continue
+    # 更新消息文本
+    if cleaned_text and cleaned_text != original_text:
+        messages[target_idx].content = cleaned_text
+        logger.info(f"[hallucination] LLM 质检完成，发现 {len(hallucinations)} 处幻觉")
 
-            status = db_product.get("status")
-            if status is not None and status != 1:
-                flag["purchasable"] = False
-                flag["issues"].append(f"商品已下架(status={status})")
-                flags.append(flag)
-                continue
+    # 购物路径：根据 LLM 校验结果更新 order
+    if user_type == "shopping" and order and order.items and order_validation:
+        valid_item_ids = set(order_validation.get("valid_item_ids", []))
+        removed_items = order_validation.get("removed_items", [])
+        all_valid = order_validation.get("all_valid", len(removed_items) == 0)
 
-            stock = db_product.get("stock")
-            if stock is not None and stock <= 0:
-                flag["purchasable"] = False
-                flag["issues"].append("商品已售罄(库存为0)")
-                flags.append(flag)
-                continue
-
-            if stock is not None and item.quantity > stock:
-                flag["issues"].append(f"库存不足: 需要{item.quantity}, 库存{stock}")
-                item.quantity = stock
-
-            if flag["issues"]:
-                flags.append(flag)
-            valid_items.append(item)
-
-        if valid_items:
-            order.items = valid_items
-        else:
-            removed_names = []
-            product_map_local = {}
-            try:
-                all_p = json.loads(raw_products) if isinstance(raw_products, str) else (raw_products or [])
-                for p in all_p:
-                    if p.get("id") is not None:
-                        product_map_local[int(p["id"])] = p
-            except (json.JSONDecodeError, TypeError):
-                pass
-            for f in flags:
-                fid = f.get("flower_id", "?")
-                p = product_map_local.get(fid, {})
-                name = p.get("name", f"商品#{fid}")
-                removed_names.append(name)
-            reason = f"您需求的商品（{'、'.join(removed_names)}）目前无法购买"
+        if not valid_item_ids:
+            # 全部商品无效
+            reason = order_validation.get("unavailable_reason", "您需求的商品目前无法购买")
             logger.info(f"[hallucination] 所有商品被过滤: {reason}")
             return {
-                "_hallucination_flags": flags,
+                "_hallucination_flags": removed_items,
                 "_order_valid": False,
                 "_recommend_failed_rounds": 0,
                 "_recommend_error": reason,
@@ -795,72 +757,150 @@ async def node_check_hallucination(state: AgentState) -> dict:
                 "messages": messages,
             }
 
-        order_valid = all(f["exists"] and f["purchasable"] for f in flags)
+        # 过滤 order.items，保留 LLM 判定有效的商品
+        order.items = [it for it in order.items if it.flower_id in valid_item_ids]
 
-        if flags:
-            logger.warning(f"[hallucination] 发现问题项: {len(flags)}个")
+        # 更新数量（LLM 可能调整了库存不足商品的数量）
+        for item_update in order_validation.get("items", []):
+            fid = item_update.get("flower_id")
+            qty = item_update.get("quantity")
+            if fid and qty is not None:
+                for order_item in order.items:
+                    if order_item.flower_id == fid:
+                        order_item.quantity = qty
+                        break
 
-        result = {
-            "_hallucination_flags": flags,
-            "_order_valid": order_valid,
+        return {
+            "_hallucination_flags": removed_items,
+            "_order_valid": all_valid,
             "_recommend_failed_rounds": 0,
             "order": order,
             "current_step": "verify",
             "messages": messages,
         }
-    else:
-        result = {
-            "_order_valid": True,
-            "_hallucination_flags": [],
-            "current_step": "verify",
-            "messages": messages,
-        }
 
-    # ── 2. 所有路径：LLM 清除 ID 信息 ──
-    # 在最后一条 AIMessage 中查找并清除活动ID/商品ID等敏感信息
-    for i in range(len(messages) - 1, -1, -1):
-        m = messages[i]
-        if hasattr(m, "type") and m.type == "ai" and m.content and m.content.strip():
-            original = m.content
-            cleaned = await _clean_ids_with_llm(original)
-            if cleaned and cleaned != original:
-                m.content = cleaned
-                logger.info(f"[hallucination] ID信息已清除")
-            break
-
-    result["messages"] = messages
-    return result
+    return {
+        "_order_valid": True,
+        "_hallucination_flags": [],
+        "current_step": "verify",
+        "messages": messages,
+    }
 
 
-async def _clean_ids_with_llm(text: str) -> str:
-    """
-    使用 LLM 清除回复中的 ID 信息和不恰当的 ID 引导语。
-    比正则更可靠，能理解语义而非机械匹配。
-    """
+def _build_hallucination_check_input(text: str, raw_products, order, user_type: str) -> str:
+    """构建 LLM 质检输入：AI 回复 + 真实数据，供 LLM 对比校验"""
+    parts = [f"【需要质检的AI回复】\n{text}"]
+
+    if user_type == "shopping" and raw_products:
+        try:
+            products = json.loads(raw_products) if isinstance(raw_products, str) else raw_products
+            if products:
+                product_data = json.dumps(products, ensure_ascii=False, indent=2)
+                parts.append(f"\n【真实商品数据库（权威数据源，用于校验AI回复中的商品是否真实存在）】\n{product_data}")
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if user_type == "shopping" and order and order.items:
+        order_items = [
+            {"flower_id": it.flower_id, "name": it.name or f"商品#{it.flower_id}", "quantity": it.quantity}
+            for it in order.items
+        ]
+        if order_items:
+            parts.append(f"\n【当前订单中的商品（需校验每个商品是否在真实数据库中且可购买）】\n{json.dumps(order_items, ensure_ascii=False, indent=2)}")
+
+    return "\n".join(parts)
+
+
+async def _call_hallucination_llm(input_text: str) -> dict:
+    """调用 LLM 进行统一质检，返回 JSON"""
     try:
         from app.llm_factory import acall_llm_with_tools
+
+        system_prompt = """你是一个花店AI质检助手。你的任务是对AI助手的回复进行全面质检：
+
+## 一、商品校验（仅购物路径，若输入中有商品数据则必须执行）
+逐一检查订单中每个商品：
+- 商品是否在真实数据库中？（flower_id 必须匹配）
+- 商品状态是否为可购买？（status 为 1 表示在售）
+- 库存是否充足？（stock > 0，且不小于订单数量）
+将不可购买的商品放入 removed_items，可购买的放入 valid_item_ids。
+
+## 二、文本幻觉检测
+检查AI回复中是否编造了以下内容：
+- 数据库中不存在的商品名称、花材品种、颜色、花语
+- 与数据不符的价格、促销信息
+- 凭空捏造的养护知识、包装规格、配送规则
+- 对用户需求的错误理解或过度承诺
+如发现幻觉，在 hallucinations 数组中记录类型和详情。
+
+## 三、敏感信息清理
+从回复文本中移除不应展示给顾客的内部数据：
+- 数据库ID编号（活动ID、商品ID、分类ID等）
+- 图片链接（http/https URL）
+- 库存、销量、限购数、活动内容等运营字段
+- 原始JSON数据结构
+- 引导用户使用ID的句子
+保留正常文本格式（列表、加粗**等）和用户应看到的信息（名称、价格、描述）。
+
+## 输出格式（严格遵守JSON）
+```json
+{
+  "cleaned_text": "清理后的回复文本",
+  "hallucinations": [
+    {"type": "商品不存在|虚假属性|错误价格|编造知识|其他", "detail": "具体描述"}
+  ],
+  "order_validation": {
+    "all_valid": true,
+    "valid_item_ids": [1, 3],
+    "removed_items": [
+      {"flower_id": 5, "name": "商品名", "reason": "库存不足"}
+    ],
+    "items": [
+      {"flower_id": 1, "valid": true, "quantity": 1}
+    ],
+    "unavailable_reason": "如果全部不可购买，填写原因；否则为null"
+  }
+}
+```
+注意：order_validation 仅在购物路径且有订单数据时返回，否则设为 null。"""
+
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "你是一个文本清理助手。你的任务是移除用户文本中所有数据库ID编号信息。\n\n"
-                    "规则：\n"
-                    "1. 移除所有包含ID编号的括号内容，如「（活动ID：13）」「(商品ID: 5)」「活动ID：7」等\n"
-                    "2. 移除引导用户使用ID的句子，如「如需了解某个活动的具体商品，可以告诉我活动ID」\n"
-                    "3. 保留其他所有内容和格式（包括列表结构、加粗标记**等）\n"
-                    "4. 如果某行只剩ID信息，可以删除整行\n\n"
-                    "直接返回清理后的文本，不要添加任何解释、前缀或后缀。"
-                ),
-            },
-            {"role": "user", "content": text},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": input_text},
         ]
         result = await acall_llm_with_tools(messages=messages, tools=None, temperature=0.0)
-        cleaned = result.get("content", "").strip()
-        if cleaned:
-            return cleaned
+        content = result.get("content", "").strip()
+
+        # 解析 JSON
+        return _parse_llm_json_response(content)
     except Exception as e:
-        logger.warning(f"[hallucination] LLM ID清理失败: {e}")
-    return text
+        logger.warning(f"[hallucination] LLM 调用异常: {e}")
+        raise
+
+
+def _parse_llm_json_response(content: str) -> dict:
+    """解析 LLM 返回的 JSON，支持 markdown 代码块包裹"""
+    import re
+
+    # 尝试提取 ```json ... ``` 代码块
+    json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+    if json_match:
+        json_str = json_match.group(1)
+    else:
+        json_str = content
+
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        # 尝试修复常见问题：截断到最后一个 } 再次解析
+        last_brace = json_str.rfind('}')
+        if last_brace > 0:
+            try:
+                return json.loads(json_str[:last_brace + 1])
+            except json.JSONDecodeError:
+                pass
+        logger.warning(f"[hallucination] JSON 解析失败，降级返回原始文本")
+        return {"cleaned_text": content, "hallucinations": []}
 
 
 async def node_respond(state: AgentState) -> dict:
