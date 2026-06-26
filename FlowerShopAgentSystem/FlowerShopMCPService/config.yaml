@@ -1,6 +1,6 @@
 embedding:
   api_key: ollama
-  base_url: http://10.101.64.156:11434
+  base_url: http://localhost:11434   # 你模型的配置地址
   model: qwen3-embedding:8b
 mysql:
   charset: utf8mb4
