@@ -1,16 +1,16 @@
 embedding:
   api_key: ollama
-  base_url: http://10.101.64.156:11434
+  base_url: http://localhost:11434 # 你模型的配置地址
   model: qwen3-embedding:8b
   top_k: 5
 llm:
   api_key: ollama
-  base_url: http://10.101.64.156:11434
+  base_url: http://localhost:11434 # 你模型的配置地址
   max_tokens: 256
   model: qwen3-coder:30b
   temperature: 0.7
 mcp_server:
-  command: C:\Users\YLWZ\.conda\envs\tudui\python.exe
+  command: # 你虚拟环境的地址，对应到python.exe
   cwd: ../FlowerShopMCPService
   module_path: server.py
 server:

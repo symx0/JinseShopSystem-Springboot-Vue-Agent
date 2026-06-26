@@ -2,7 +2,19 @@
 
 全栈鲜花电商平台，集成 AI 智能导购 Agent，支持从选购推荐到下单支付的全流程自动化。
 
+如果该工作对您的学习有帮助的话点点STAR吧~
 ***
+
+<img width="1275" height="676" alt="Snipaste_2026-06-15_20-57-51" src="https://github.com/user-attachments/assets/3614db15-7a2d-4273-ad51-f9f5f7b63817" />
+
+
+<img width="1275" height="676" alt="Snipaste_2026-06-15_20-53-37" src="https://github.com/user-attachments/assets/182d5ccd-03e6-4eb5-80cf-1117ffc47c38" />
+
+<img width="2367" height="3054" alt="image" src="https://github.com/user-attachments/assets/8c839723-e6ed-4a7b-81d6-2360fae02e06" />
+
+
+
+
 
 ## 项目架构
 
@@ -301,3 +313,8 @@ FlowerShopAgentSystem/FlowerShopAgent/app/
     └── schemas.py          # Pydantic 数据模型
 ```
 
+
+
+---
+感谢以下开源工作：
+https://github.com/cuiyuestar/Blossom-FlowerShop
