@@ -21,3 +21,10 @@ sky:
     secret: 60d0618ecd57c7557080f610e4645a1e
   alipay:
     biz-content-template: '{"out_trade_no":"%s","total_amount":"%s","subject":"%s","product_code":"FAST_INSTANT_TRADE_PAY"}'
+
+rocketmq:
+  name-server: 127.0.0.1:9876
+  producer:
+    group: flower-shop-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2

@@ -149,15 +149,14 @@
     </el-dialog>
 
     <!-- 付款弹窗 -->
-    <el-dialog v-model="payDialogVisible" title="订单已创建" width="400px" :close-on-click-modal="false" :close-on-press-escape="false">
+    <el-dialog v-model="payDialogVisible" title="确认下单" width="400px" :close-on-click-modal="false" :close-on-press-escape="false">
       <div style="text-align:center;padding:10px 0">
-        <el-icon style="font-size:48px;color:#67C23A;margin-bottom:12px"><SuccessFilled /></el-icon>
-        <p style="font-size:16px;color:#2D2320;margin-bottom:8px">下单成功！</p>
-        <p style="font-size:14px;color:#9B8B85">付款后预计在{{ pendingDeliveryTime ? pendingDeliveryTime.replace('T', ' ').substring(0, 16) : '1天内' }}内发货</p>
+        <el-icon style="font-size:48px;color:#67C23A;margin-bottom:12px"><ShoppingCart /></el-icon>
+        <p style="font-size:16px;color:#2D2320;margin-bottom:8px">订单金额：¥{{ pendingOrderData ? pendingOrderData.amount : 0 }}</p>
       </div>
       <template #footer>
-        <el-button @click="payLater">稍后支付</el-button>
-        <el-button type="primary" @click.stop="goPay">立即支付</el-button>
+        <el-button @click="payLater" :loading="placingOrder">稍后支付</el-button>
+        <el-button type="primary" :loading="placingOrder" @click.stop="goPay">立即支付</el-button>
       </template>
     </el-dialog>
   </div>
@@ -167,7 +166,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { SuccessFilled } from '@element-plus/icons-vue'
+import { ShoppingCart } from '@element-plus/icons-vue'
 import { orderApi, cartApi, addressApi, shopApi } from '@/api'
 import areaData from 'china-area-data'
 
@@ -371,6 +370,10 @@ const handleDeleteAddress = async (id) => {
 const payDialogVisible = ref(false)
 const pendingOrderId = ref(null)
 const pendingDeliveryTime = ref('')
+// 暂存订单数据，等待用户在支付弹窗中选择后才真正下单
+const pendingOrderData = ref(null)
+// 真正下单过程中的 loading（点"立即支付"/"稍后支付"后）
+const placingOrder = ref(false)
 
 const submitOrder = async () => {
   if (!selectedAddress.value) {
@@ -381,56 +384,65 @@ const submitOrder = async () => {
     ElMessage.warning('请选择送达时间')
     return
   }
-  submitting.value = true
-  try {
-    const data = {
-      addressBookId: selectedAddress.value,
-      payMethod: 1,
-      packAmount: feeConfig.value.packFee,
-      deliveryFee: actualDeliveryFee.value,
-      amount: finalPrice.value,
-      deliveryStatus: deliveryStatus.value,
-      remark: remark.value || ''
-    }
-    if (deliveryStatus.value === 0 && scheduledTime.value) {
-      data.estimatedDeliveryTime = scheduledTime.value
-    }
-    const res = await orderApi.submit(data)
-    if (res.code === 1) {
-      const vo = res.data
-      if (!vo || !vo.id) {
-        console.warn('submitOrder: 订单提交返回数据异常', vo)
-        ElMessage.error('订单创建异常，请稍后在订单列表中查看')
-        router.push('/order')
-        return
-      }
-      await cartApi.clean()
-      pendingOrderId.value = vo.id
-      pendingDeliveryTime.value = vo.estimatedDeliveryTime || ''
-      // 弹出付款弹窗
-      payDialogVisible.value = true
-    }
-  } catch (e) {
-    ElMessage.error(e?.message || '下单失败')
-  } finally {
-    submitting.value = false
+  // 仅校验并准备订单数据，弹出支付确认弹窗，不执行下单
+  const data = {
+    addressBookId: selectedAddress.value,
+    payMethod: 1,
+    packAmount: feeConfig.value.packFee,
+    deliveryFee: actualDeliveryFee.value,
+    amount: finalPrice.value,
+    deliveryStatus: deliveryStatus.value,
+    remark: remark.value || ''
   }
+  if (deliveryStatus.value === 0 && scheduledTime.value) {
+    data.estimatedDeliveryTime = scheduledTime.value
+  }
+  pendingOrderData.value = data
+  pendingOrderId.value = null
+  pendingDeliveryTime.value = ''
+  payDialogVisible.value = true
+}
+
+// 真正执行下单：调用后端 submit → 轮询结果 → 清空购物车
+const placeOrder = async () => {
+  if (!pendingOrderData.value) {
+    throw new Error('订单信息异常')
+  }
+  const res = await orderApi.submit(pendingOrderData.value)
+  if (res.code !== 1) {
+    throw new Error(res.msg || '订单创建失败')
+  }
+  const correlationId = res.data
+  const orderResult = await pollOrderResult(correlationId)
+  if (!orderResult || !orderResult.id) {
+    throw new Error('订单创建失败，请重试')
+  }
+  // 下单成功，清空购物车
+  await cartApi.clean()
+  pendingOrderId.value = orderResult.id
+  pendingDeliveryTime.value = orderResult.estimatedDeliveryTime
+  return orderResult
 }
 
 const goPay = async () => {
-  if (!pendingOrderId.value) {
-    ElMessage.error('订单信息异常，无法发起支付')
+  if (placingOrder.value) return
+  if (!pendingOrderData.value) {
+    ElMessage.error('订单信息异常')
     payDialogVisible.value = false
     return
   }
+  placingOrder.value = true
   try {
+    // 先下单
+    await placeOrder()
+    payDialogVisible.value = false
+    // 再发起支付
     const modeRes = await shopApi.getPaymentMode()
     const paymentMode = modeRes.code === 1 ? (modeRes.data ?? 1) : 1
     if (paymentMode === 0) {
       const res = await orderApi.mockPayment(pendingOrderId.value)
       if (res.code === 1) {
         ElMessage.success('支付成功')
-        payDialogVisible.value = false
         router.push('/order')
       } else {
         ElMessage.error(res.msg || '支付失败')
@@ -439,15 +451,63 @@ const goPay = async () => {
       window.location.href = '/api/user/order/payment/page/' + pendingOrderId.value
     }
   } catch (e) {
-    ElMessage.error(e?.message || '操作失败')
+    ElMessage.error(e?.message || '下单失败')
+    payDialogVisible.value = false
+  } finally {
+    placingOrder.value = false
   }
 }
 
-const payLater = () => {
-  payDialogVisible.value = false
-  const deliveryTime = pendingDeliveryTime.value
-  ElMessage.success(`下单成功！付款后预计在${deliveryTime ? deliveryTime.replace('T', ' ').substring(0, 16) : '1天内'}内发货，请尽快付款`)
-  router.push('/order')
+const payLater = async () => {
+  if (placingOrder.value) return
+  if (!pendingOrderData.value) {
+    ElMessage.error('订单信息异常')
+    payDialogVisible.value = false
+    return
+  }
+  placingOrder.value = true
+  try {
+    const orderResult = await placeOrder()
+    payDialogVisible.value = false
+    const deliveryTime = orderResult.estimatedDeliveryTime
+    ElMessage.success(`下单成功！付款后预计在${deliveryTime ? deliveryTime.replace('T', ' ').substring(0, 16) : '1天内'}内发货，请尽快付款`)
+    router.push('/order')
+  } catch (e) {
+    ElMessage.error(e?.message || '下单失败')
+    payDialogVisible.value = false
+  } finally {
+    placingOrder.value = false
+  }
+}
+
+// 轮询获取异步下单结果
+const pollOrderResult = async (correlationId, maxRetries = 30, interval = 1000) => {
+  for (let i = 0; i < maxRetries; i++) {
+    let result = null
+    try {
+      const res = await orderApi.getSubmitResult(correlationId)
+      if (res.code === 1 && res.data) {
+        result = res.data
+      }
+    } catch (e) {
+      // 仅网络/请求异常才重试，最后一次抛出
+      if (i === maxRetries - 1) throw e
+    }
+    // 业务结果判断放在 try-catch 外，避免业务错误被吞导致空等
+    if (result) {
+      // 下单成功
+      if (typeof result === 'object' && result.id) {
+        return result
+      }
+      // 业务错误（如购物车为空），立即抛出，不再轮询
+      if (typeof result === 'object' && result.error) {
+        throw new Error(result.error)
+      }
+    }
+    // 仅 "processing" 或无数据时等待后重试
+    await new Promise(resolve => setTimeout(resolve, interval))
+  }
+  throw new Error('订单处理超时，请稍后在订单列表中查看')
 }
 
 onMounted(() => {

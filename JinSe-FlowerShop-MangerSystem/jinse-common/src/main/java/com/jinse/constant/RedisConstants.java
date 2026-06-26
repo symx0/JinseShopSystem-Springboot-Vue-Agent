@@ -48,6 +48,8 @@ public class RedisConstants {
     public static final Long CACHE_ACTIVITY_PAGE_TTL = 10L;
 
     public static final String FLOWER_KEY = "flower:";
+    public static final String FLOWER_NULL_KEY = "flower:null:";
+    public static final Long CACHE_NULL_TTL_FLOWER = 2L;
     public static final String FLOWER_PAGE_KEY = "flower:page:";
     public static final String FLOWER_CATEGORY_KEY = "category:";
 

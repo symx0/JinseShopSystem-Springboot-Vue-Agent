@@ -2,12 +2,15 @@ package com.jinse.controller.user;
 
 
 import cn.hutool.db.sql.Order;
+import com.alibaba.fastjson.JSON;
 import com.jinse.context.BaseContext;
 import com.jinse.dto.OrdersPaymentDTO;
 import com.jinse.dto.OrdersSubmitDTO;
 import com.jinse.entity.OrderDetail;
 import com.jinse.entity.Orders;
 import com.jinse.config.AlipayConfigProvider;
+import com.jinse.annotation.RateLimit;
+import com.jinse.utils.DistributedLockUtil;
 import com.jinse.result.Result;
 import com.jinse.service.AlipayService;
 import com.jinse.service.OrderService;
@@ -26,6 +29,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.data.redis.core.RedisTemplate;
 
 @RestController("userOrderController")
 @Api(tags = "用户端相关接口")
@@ -39,16 +45,49 @@ public class OrderController {
     @Autowired
     private AlipayConfigProvider alipayConfigProvider;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Autowired
+    private DistributedLockUtil distributedLockUtil;
+
     /**
-     * 订单提交
+     * 订单提交（异步下单）
+     * 通过 RocketMQ 异步处理，立即返回 correlationId
+     * 前端通过轮询查询接口获取下单结果
      * @param ordersSubmitDTO
      * @return
      */
     @PostMapping("/submit")
-    @ApiOperation("订单提交")
+    @ApiOperation("订单提交（异步）")
+    @RateLimit(window = 1, maxCount = 5, message = "下单过于频繁，请稍后再试")
     public Result submit(@RequestBody OrdersSubmitDTO ordersSubmitDTO){
-        OrderSubmitVO orderSubmitVO =orderService.submit(ordersSubmitDTO);
-        return Result.success(orderSubmitVO);
+        Long userId = BaseContext.getCurrentId();
+        String correlationId = orderService.submitAsync(ordersSubmitDTO, userId);
+        // 返回 correlationId，前端通过轮询查询接口获取结果
+        return Result.success(correlationId);
+    }
+
+    /**
+     * 查询异步下单结果
+     * @param correlationId 关联ID
+     * @return 下单结果或 "processing" 表示处理中
+     */
+    @GetMapping("/submit/result/{correlationId}")
+    @ApiOperation("查询异步下单结果")
+    public Result getSubmitResult(@PathVariable String correlationId){
+        String key = "order:submit:result:" + correlationId;
+        String result = (String) redisTemplate.opsForValue().get(key);
+        if (result == null) {
+            return Result.success("processing");
+        }
+        // 解析 JSON 字符串为对象返回给前端
+        try {
+            Object parsed = JSON.parse(result);
+            return Result.success(parsed);
+        } catch (Exception e) {
+            return Result.success(result);
+        }
     }
 
     /**
@@ -88,7 +127,7 @@ public class OrderController {
     })
     public Result<List<OrderDetailVO>> listOrderDetail(@PathVariable  Long orderId){
         List<OrderDetailVO> orderDetailVOList=orderService.listOrderDetail(orderId);
-        log.info("订单详情查询:{}",orderDetailVOList);
+//        log.info("订单详情查询:{}",orderDetailVOList);
         return Result.success(orderDetailVOList);
     }
 
@@ -201,10 +240,38 @@ public class OrderController {
                 return "success";
             }
             log.info("订单状态：{}，期望状态：{}", orders.getStatus(), Orders.PENDING_PAYMENT);
-            
+
             if (Orders.PENDING_PAYMENT.equals(orders.getStatus())) {
-                orderService.payment(orders.getId(), orders.getUserId());
-                log.info("订单支付成功，订单号：{}，订单ID：{}", outTradeNo, orders.getId());
+                // 获取分布式锁，防止与超时关单并发
+                // 重试3次，每次间隔1秒，确保不会因超时消费者持锁而丢失支付结果
+                String lockValue = null;
+                for (int i = 0; i < 3; i++) {
+                    lockValue = distributedLockUtil.tryLock(orders.getId(), 15);
+                    if (lockValue != null) break;
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                if (lockValue == null) {
+                    log.warn("支付回调获取分布式锁超时，订单 {}，支付宝会重试回调", orders.getNumber());
+                    return "failure";
+                }
+                try {
+                    // 再次检查状态，防止获取锁期间状态已变更
+                    Orders freshOrder = orderService.getById(orders.getId());
+                    if (freshOrder != null && Orders.PENDING_PAYMENT.equals(freshOrder.getStatus())) {
+                        orderService.payment(orders.getId(), orders.getUserId());
+                        log.info("订单支付成功，订单号：{}，订单ID：{}", outTradeNo, orders.getId());
+                    } else {
+                        log.warn("订单状态已变更，订单号：{}，当前状态：{}", outTradeNo,
+                                freshOrder != null ? freshOrder.getStatus() : "null");
+                    }
+                } finally {
+                    distributedLockUtil.unlock(orders.getId(), lockValue);
+                }
             } else {
                 log.warn("订单状态不是待付款，无法更新，订单号：{}，当前状态：{}", outTradeNo, orders.getStatus());
             }
@@ -232,10 +299,27 @@ public class OrderController {
         // 主动查询支付宝交易状态
         String tradeStatus = alipayService.queryTradeStatus(orders.getNumber());
         if ("TRADE_SUCCESS".equals(tradeStatus) || "TRADE_FINISHED".equals(tradeStatus)) {
-            // 支付成功但回调未到达，补偿更新订单
-            orderService.payment(orders.getId(), orders.getUserId());
-            log.info("补偿更新订单支付成功，订单号：{}", orders.getNumber());
-            return Result.success(Orders.TO_BE_CONFIRMED);
+            // 获取分布式锁，防止与超时关单并发
+            String lockValue = distributedLockUtil.tryLock(orders.getId(), 15);
+            if (lockValue == null) {
+                log.info("订单 {} 正在被超时关单处理，跳过补偿支付", orders.getNumber());
+                return Result.success(orders.getStatus());
+            }
+            try {
+                // 再次检查状态
+                Orders freshOrder = orderService.getById(orders.getId());
+                if (freshOrder != null && Orders.PENDING_PAYMENT.equals(freshOrder.getStatus())) {
+                    orderService.payment(orders.getId(), orders.getUserId());
+                    log.info("补偿更新订单支付成功，订单号：{}", orders.getNumber());
+                    return Result.success(Orders.TO_BE_CONFIRMED);
+                } else {
+                    log.warn("订单状态已变更，订单号：{}，当前状态：{}", orders.getNumber(),
+                            freshOrder != null ? freshOrder.getStatus() : "null");
+                    return Result.success(freshOrder != null ? freshOrder.getStatus() : null);
+                }
+            } finally {
+                distributedLockUtil.unlock(orders.getId(), lockValue);
+            }
         }
         // 仍未支付
         return Result.success(orders.getStatus());

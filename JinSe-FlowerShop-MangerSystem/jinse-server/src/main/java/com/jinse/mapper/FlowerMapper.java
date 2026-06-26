@@ -69,4 +69,10 @@ public interface FlowerMapper {
      * @return
      */
     List<Flower> list(Flower flower);
+
+    /**
+     * 获取所有鲜花 ID（布隆过滤器初始化使用）
+     */
+    @Select("select id from flower")
+    List<Long> getAllIds();
 }

@@ -1,5 +1,6 @@
 package com.jinse.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.jinse.constant.MessageConstant;
 import com.jinse.constant.RedisConstants;
 import com.jinse.context.BaseContext;
@@ -25,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -65,6 +71,45 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private AbstractChainContext<OrderDetail> orderDetailAbstractChainContext;
 
+    @Autowired
+    private RocketMQTemplate rocketMQTemplate;
+
+
+    /**
+     * 异步下单（通过 RocketMQ）
+     * @param ordersSubmitDTO 订单提交数据
+     * @param userId 用户ID
+     * @return correlationId 用于前端通过 WebSocket 接收结果
+     */
+    public String submitAsync(OrdersSubmitDTO ordersSubmitDTO, Long userId) {
+        // 责任链校验订单数据
+        orderSubmitAbstractChainContext.handler(OrderChainMarkEnum.ORDER_SUBMIT_FILTER.name(), ordersSubmitDTO);
+        
+        // 发送异步下单消息到 RocketMQ
+        String correlationId = java.util.UUID.randomUUID().toString();
+        try {
+            OrderMessage orderMessage = OrderMessage.builder()
+                    .correlationId(correlationId)
+                    .userId(userId)
+                    .payload(JSON.toJSONString(ordersSubmitDTO))
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+
+            String jsonStr = JSON.toJSONString(orderMessage);
+            Message<String> message = MessageBuilder.withPayload(jsonStr).build();
+
+            log.info("[MQ-Producer] 开始发送异步下单消息，topic=order-submit-topic, correlationId={}, userId={}", 
+                    correlationId, userId);
+
+            rocketMQTemplate.syncSend("order-submit-topic", message);
+
+            log.info("[MQ-Producer] 异步下单消息发送成功，correlationId={}", correlationId);
+        } catch (Exception e) {
+            log.error("[MQ-Producer] 发送异步下单消息失败，correlationId={}, 错误={}", 
+                    correlationId, e.getMessage(), e);
+        }
+        return correlationId;
+    }
 
     /**
      * 订单提交
@@ -152,6 +197,11 @@ public class OrderServiceImpl implements OrderService {
         //清空购物车（根据用户id）
         shoppingCartMapper.deleteByUserId(userId);
 
+        // 发送 RocketMQ 消息：订单创建事件 → WebSocket 通知管理端
+        sendOrderCreatedEvent(orders);
+        // 发送延迟消息：15分钟后检查订单是否已付款，未付款则自动取消
+        sendOrderTimeoutDelayMessage(orders);
+
         //封装VO返回结果
         OrderSubmitVO orderSubmitVO=OrderSubmitVO.builder()
                 .id(orders.getId())
@@ -197,7 +247,7 @@ public class OrderServiceImpl implements OrderService {
 
             orderDetailVOList.add(orderDetailVO);
 
-            log.info("orderDetailVOList:{}",orderDetailVOList);
+//            log.info("orderDetailVOList:{}",orderDetailVOList);
         }
         return orderDetailVOList;
     }
@@ -472,6 +522,54 @@ public class OrderServiceImpl implements OrderService {
             redisTemplate.expire(seqKey, 26, java.util.concurrent.TimeUnit.HOURS);
         }
         return today + "-" + String.format("%04d", seq);
+    }
+
+    /**
+     * 发送订单创建事件（通过 RocketMQ）
+     * 通知管理端有新订单
+     */
+    private void sendOrderCreatedEvent(Orders orders) {
+        try {
+            OrderMessage orderMessage = OrderMessage.builder()
+                    .orderId(orders.getId())
+                    .orderNumber(orders.getNumber())
+                    .userId(orders.getUserId())
+                    .payload(JSON.toJSONString(orders))
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+
+            String jsonStr = JSON.toJSONString(orderMessage);
+            Message<String> message = MessageBuilder.withPayload(jsonStr).build();
+
+//            log.info("[MQ-Producer] 开始发送订单创建事件，topic=order-created-topic, 订单号={}", orders.getNumber());
+            rocketMQTemplate.syncSend("order-created-topic", message);
+            log.info("[MQ-Producer] 订单创建事件发送成功，订单号={}", orders.getNumber());
+        } catch (Exception e) {
+            log.error("[MQ-Producer] 发送订单创建事件失败，订单号={}, 错误={}", orders.getNumber(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 发送订单超时延迟消息（通过 RocketMQ）
+     * 15分钟后检查订单是否已付款，未付款则自动取消
+     */
+    private void sendOrderTimeoutDelayMessage(Orders orders) {
+        try {
+            OrderMessage orderMessage = OrderMessage.builder()
+                    .orderId(orders.getId())
+                    .orderNumber(orders.getNumber())
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+
+            String jsonStr = JSON.toJSONString(orderMessage);
+            Message<String> message = MessageBuilder.withPayload(jsonStr).build();
+
+//            log.info("[MQ-Producer] 开始发送订单超时延迟消息，topic=order-timeout-topic, 订单号={}, delayLevel=15", orders.getNumber());
+            rocketMQTemplate.syncSend("order-timeout-topic", message, 3000, 15);
+            log.info("[MQ-Producer] 订单超时延迟消息发送成功，订单号={}", orders.getNumber());
+        } catch (Exception e) {
+            log.error("[MQ-Producer] 发送订单超时延迟消息失败，订单号={}, 错误={}", orders.getNumber(), e.getMessage(), e);
+        }
     }
 
 }

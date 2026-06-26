@@ -15,6 +15,14 @@ import java.util.List;
 public interface OrderService {
 
     /**
+     * 异步下单（通过 RocketMQ）
+     * @param ordersSubmitDTO 订单提交数据
+     * @param userId 用户ID
+     * @return correlationId 用于前端通过 WebSocket 接收结果
+     */
+    String submitAsync(OrdersSubmitDTO ordersSubmitDTO, Long userId);
+
+    /**
      * 用户下单
      * @param ordersSubmitDTO
      * @return

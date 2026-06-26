@@ -44,6 +44,7 @@ export const cartApi = {
 
 export const orderApi = {
   submit: (data) => request.post('/user/order/submit', data),
+  getSubmitResult: (correlationId) => request.get(`/user/order/submit/result/${correlationId}`),
   list: () => request.get('/user/order/list'),
   detail: (orderId) => request.get(`/user/order/detail/${orderId}`),
   receipt: (orderId) => request.put(`/user/order/receipt/${orderId}`),
